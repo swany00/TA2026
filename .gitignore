@@ -1,0 +1,68 @@
+# 데이터 폴더 (용량이 큰 원본 데이터)
+data/
+outputs/
+experiments/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# PyTorch 모델 및 체크포인트
+*.pt
+*.pth
+*.ckpt
+*.pkl
+
+# NumPy 배열 파일
+*.npy
+*.npz
+
+# 로그 파일
+*.log
+logs/
+
+# 환경 변수
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 임시 파일
+*.tmp
+*.bak
+*.cache
+
+# 기타
+*.nc
+*.bin
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+
+# 하지만 README나 설정 파일의 예시 이미지는 제외하지 않음
+!README*.png
+!README*.jpg
+!configs/**/*.png
+
