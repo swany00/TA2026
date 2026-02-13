@@ -206,3 +206,52 @@ python src/data/check_patch_pt.py
 ```
 
 자동으로 `outputs/patch_pt`에서 첫 chunk를 찾아 출력합니다.
+
+## 기존 고민 Q&A (업데이트 답변)
+
+### Q. 현재는 파일 매칭용 timestamp만 있고, 모델 입력 피처(sin/cos of day-of-year, minute-of-day)로는 아직 완전히 구현되지 않았습니다?
+
+A. 현재는 구현되어 있습니다.  
+`time7 = [doy_cos, doy_sin, hour_cos, hour_sin, month_cos, month_sin, sza_center]`를 입력으로 사용합니다.
+
+### Q. GSD 인코딩은 아직 입력에 포함되지 않았습니다?
+
+A. 현재는 포함되어 있습니다.  
+`loc = [lat, lon, gsd_m]`로 입력되며, 기본 `gsd_m=2000.0`(2km)입니다.
+
+### Q. 각 채널의 중심 파장 전달 로직이 없습니다?
+
+A. 현재는 포함되어 있습니다.  
+`model.bt_waves_um`(10채널) + `model.rf_waves_um`(6채널)을 Clay encoder 입력으로 사용합니다.
+
+### Q. 마스킹을 해도 괜찮은가요? TA가 지점자료인데...
+
+A. 현재 학습 루프에서는 마스킹(MAE)을 사용하지 않습니다.  
+지금 단계는 MAE가 아닌 **TA supervised fine-tuning**입니다.
+
+### Q. Self-Distillation(DINOv2)은 현재 학습에 들어가나요?
+
+A. 현재 학습에는 들어가지 않습니다.  
+현재는 회귀 loss(MSE/RMSE) 기반 fine-tuning만 수행합니다.
+
+### Q. 샘플은 CSV로 저장하나요, NPY/PT로 저장하나요?
+
+A. 현재 기본 경로는 다음과 같습니다.
+
+- 인덱스: CSV (`outputs/index/index_*.csv`)
+- 학습 데이터: PT chunk (`outputs/patch_pt/*_chunk_*.pt`)
+
+### Q. Landcover one-hot은 어떻게 처리하나요?
+
+A. 패치 중심 픽셀 기준 클래스 값을 one-hot(17차원)으로 사용합니다.
+
+### Q. 결측 데이터는 어떻게 처리하나요?
+
+A. `build_patches_pt` 단계에서 NaN/Inf/유효범위 조건을 통과한 샘플만 저장합니다.
+
+### Q. 정규화는 어떻게 하나요?
+
+A. 2022 통계를 사용한 z-score 정규화입니다.
+
+- 입력 통계: `data/statistics/input_statistics_2022.json`
+- 타깃 통계: `data/statistics/statistics_2022.json`
