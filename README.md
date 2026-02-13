@@ -34,12 +34,21 @@ GK-2A 2D 패치 기반 TA 회귀 학습 파이프라인
 
 ```mermaid
 flowchart LR
-  A["원천 데이터<br/>TA 라벨 + BT/RF/SZA + DEM/LSMASK/Landcover"] --> B["build_index"]
-  B --> C["index_train/val/test.csv"]
-  C --> D["build_patches_pt"]
-  D --> E["patch_pt chunks<br/>x, y, time7, loc, landcover_onehot, meta"]
-  E --> F["train (clay_transfer)"]
-  F --> G["current.pt / best.pt"]
+  User["연구자/사용자<br/>(actor)"]
+  Raw["원천 데이터셋"]
+  Index["build_index"]
+  Patch["build_patches_pt"]
+  PT["Patch Store<br/>outputs/patch_pt"]
+  Train["학습 엔진<br/>train (clay_transfer)"]
+  Ckpt["Checkpoint Store<br/>current.pt / best.pt"]
+
+  User -. "설정(configs)" .-> Index
+  Raw -. "TA+영상 메타<br/>&laquo;flow&raquo;" .-> Index
+  Index -. "index_train/val/test.csv<br/>&laquo;flow&raquo;" .-> Patch
+  Patch -. "patch chunks<br/>(x,y,time7,loc,lc,meta)<br/>&laquo;flow&raquo;" .-> PT
+  User -. "학습 설정(configs/train_ta.yaml)" .-> Train
+  PT -. "학습 배치<br/>&laquo;flow&raquo;" .-> Train
+  Train -. "모델 상태<br/>&laquo;flow&raquo;" .-> Ckpt
 ```
 
 ### 실행흐름(상세)
