@@ -1,0 +1,6 @@
+flowchart TB
+  S["Sample i"] --> X["x: [19,9,9]<br/>BT10 + RF6 + SZA1 + DEM1 + LSMASK1"]
+  S --> T["time7: [7]<br/>doy/hour/month sin-cos + sza_center"]
+  S --> L["loc: [3]<br/>lat, lon, gsd_m"]
+  S --> C["landcover_onehot: [17]"]
+  S --> Y["y: [1]<br/>normalized TA"]

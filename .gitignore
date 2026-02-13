@@ -65,4 +65,7 @@ ENV/
 !README*.png
 !README*.jpg
 !configs/**/*.png
+!docs/**/*.png
+!docs/**/*.jpg
+!docs/**/*.mmd
 
