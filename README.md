@@ -31,13 +31,31 @@ GK-2A 2D 패치 기반 TA 회귀 학습 파이프라인
 ## 파이프라인
 
 ```mermaid
-flowchart LR
-  A[Raw data\nBT/Reflectance/SZA/DEM/LSMASK/Landcover\nTA labels] --> B[build_index]
-  B --> C[index_train.csv / index_val.csv / index_test.csv]
-  C --> D[build_patches_pt]
-  D --> E[outputs/patch_pt/*.pt chunks]
-  E --> F[train\nmodel=clay_transfer]
-  F --> G[current.pt / best.pt]
+sequenceDiagram
+    participant Raw as 원천 데이터
+    participant Index as build_index
+    participant Patch as build_patches_pt
+    participant PT as outputs/patch_pt
+    participant Train as train (clay_transfer)
+    participant Ckpt as outputs/checkpoints
+
+    Note over Raw,Index: 1) 인덱스 생성
+    Raw->>Index: TA 라벨 + BT/RF/SZA 경로 + 좌표
+    Index-->>Raw: index_train/val/test.csv 저장
+
+    Note over Index,Patch: 2) 패치 생성
+    Index->>Patch: split별 index CSV 입력
+    Patch->>Patch: 좌표 검증/결측 필터/정규화
+    Patch->>Patch: time7, loc, landcover_onehot 생성
+    Patch-->>PT: train/val/test_chunk_XXXXX.pt 저장
+
+    Note over PT,Train: 3) 학습
+    PT->>Train: patch_pt 로딩 (x, y, time7, loc, lc)
+    Train->>Train: Clay encoder + 회귀 헤드 학습
+    Train-->>Ckpt: current.pt (매 epoch)
+    alt val loss 개선
+        Train-->>Ckpt: best.pt 갱신
+    end
 ```
 
 ### 실행 순서
@@ -51,22 +69,6 @@ python main.py --config configs/train_ta.yaml --stage train
 ---
 
 ## 패치 생성 상세 (`build_patches_pt`)
-
-```mermaid
-flowchart TD
-  A[index_*.csv chunk read] --> B[group by path_bt/path_rf/path_sza/year]
-  B --> C[load BT/RF/SZA arrays]
-  C --> D[extract patch around pixel_x/pixel_y]
-  D --> E[validity checks\nin-bound, finite, landcover class]
-  E --> F[normalize\nBT/RF/SZA/DEM + TA z-score]
-  F --> G[build time7 / loc / landcover_onehot / meta]
-  G --> H[append to in-memory payload]
-  H --> I{payload >= patch_chunk_rows?}
-  I -- yes --> J[save split_chunk_XXXXX.pt]
-  I -- no --> K[continue]
-  J --> K
-  K --> L[end-of-split flush final chunk]
-```
 
 ### 입력/출력
 
