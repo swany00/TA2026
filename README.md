@@ -3,6 +3,23 @@
 GK-2A 2D 패치 기반 TA 회귀 학습 파이프라인입니다.  
 현재 단계는 **Clay pretrained encoder를 이용한 supervised fine-tuning**입니다.
 
+![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.9-EE4C2C?logo=pytorch&logoColor=white)
+![Model](https://img.shields.io/badge/Model-Clay%20Transfer-0A7EA4)
+![Data](https://img.shields.io/badge/Data-2D%20Patch%20PT-2D7D46)
+![Stage](https://img.shields.io/badge/Stage-Supervised%20TA-6C4AB6)
+
+## Quick Summary
+
+| 항목 | 현재 상태 |
+| --- | --- |
+| 학습 방식 | Clay encoder + TA supervised fine-tuning |
+| 데이터 포맷 | `patch_pt` (`*_chunk_XXXXX.pt`) |
+| 입력 | `x(19,9,9) + time7 + loc + landcover_onehot` |
+| 타깃 | TA z-score |
+| 체크포인트 | `current.pt`(latest), `best.pt`(best val) |
+| 메트릭 | `loss(MSE)`, `RMSE(norm)`, `RMSE(K)` |
+
 ## 현재 구현 상태
 
 - `build_index`: 라벨/위성 매칭 인덱스 생성 (`train/val/test` 분할 CSV)
@@ -62,6 +79,16 @@ python main.py --config configs/data_2d.yaml --stage build_patches_pt
 python main.py --config configs/train_ta.yaml --stage train
 ```
 
+```mermaid
+flowchart LR
+  A[Raw data\nBT/Reflectance/SZA/DEM/LSMASK/Landcover\nTA labels] --> B[build_index]
+  B --> C[index_train.csv / index_val.csv / index_test.csv]
+  C --> D[build_patches_pt]
+  D --> E[outputs/patch_pt/*.pt chunks]
+  E --> F[train\nmodel=clay_transfer]
+  F --> G[current.pt / best.pt]
+```
+
 참고:
 - `build_index` 결과:
   - `outputs/index/index.csv`
@@ -69,6 +96,83 @@ python main.py --config configs/train_ta.yaml --stage train
   - `outputs/index/index_val.csv`
   - `outputs/index/index_test.csv`
 - 현재 기본 학습 경로는 `patch_pt`입니다.
+
+## PT 청크 생성 상세 (`build_patches_pt`)
+
+`build_patches_pt`는 `index_train/val/test.csv`를 읽어 학습용 `.pt` chunk를 생성합니다.
+
+```mermaid
+flowchart TD
+  A[index_*.csv chunk read] --> B[group by path_bt/path_rf/path_sza/year]
+  B --> C[load BT/RF/SZA arrays]
+  C --> D[extract patch around pixel_x/pixel_y]
+  D --> E[validity checks\nin-bound, finite, landcover class]
+  E --> F[normalize\nBT/RF/SZA/DEM + TA z-score]
+  F --> G[build time7 / loc / landcover_onehot / meta]
+  G --> H[append to in-memory payload]
+  H --> I{payload >= patch_chunk_rows?}
+  I -- yes --> J[save split_chunk_XXXXX.pt]
+  I -- no --> K[continue]
+  J --> K
+  K --> L[end-of-split flush final chunk]
+```
+
+### 1) 입력/출력
+
+- 입력:
+  - `outputs/index/index_train.csv`
+  - `outputs/index/index_val.csv`
+  - `outputs/index/index_test.csv`
+- 출력:
+  - `outputs/patch_pt/train_chunk_00000.pt`, ...
+  - `outputs/patch_pt/val_chunk_00000.pt`, ...
+  - `outputs/patch_pt/test_chunk_00000.pt`, ...
+
+### 2) 샘플 생성 흐름
+
+1. 인덱스 CSV를 `patch_chunk_rows` 단위로 chunk 읽기
+2. `(path_bt, path_reflectance, path_sza, year)` 기준 그룹 처리
+3. 중심 픽셀 기준으로 `patch_size x patch_size` 패치 추출
+4. 유효성 필터:
+   - 경계 밖 좌표 제외
+   - NaN/Inf 포함 샘플 제외
+   - landcover 클래스 범위 밖 제외
+5. 정규화:
+   - BT/Reflectance/SZA/DEM: `input_statistics_2022.json` 기준 z-score
+   - TA: `statistics_2022.json` 기준 z-score
+6. 부가 피처 생성:
+   - `time7`: `[doy_cos, doy_sin, hour_cos, hour_sin, month_cos, month_sin, sza_center]`
+   - `loc`: `[lat, lon, gsd_m]`
+   - `landcover_onehot`: 17차원
+7. 메모리 버퍼에 누적 후 `patch_chunk_rows`개마다 `.pt` 저장
+
+### 3) PT 파일 내부 구조
+
+각 `*_chunk_XXXXX.pt`는 아래 키를 가집니다.
+
+- `x`: `(N, 19, 9, 9)` float32
+- `y`: `(N,)` float32 (정규화된 TA)
+- `time7`: `(N, 7)` float32
+- `loc`: `(N, 3)` float32
+- `landcover_onehot`: `(N, 17)` float32
+- `meta`: 길이 `N` list (timestamp/stn/pixel 좌표)
+
+여기서 `N`은 보통 `patch_chunk_rows`이며 마지막 파일은 더 작을 수 있습니다.
+
+### 4) 재시작/이어쓰기
+
+- `build.skip_existing_patch_pt: true`이면 기존 chunk를 감지해 이어서 생성합니다.
+- 기존 파일의 샘플 수를 읽어 `resume_rows` 기준으로 스킵 후 이어 생성합니다.
+
+### 5) 성능 관련 설정 (`configs/data_2d.yaml`)
+
+- `build.patch_chunk_rows`: 파일당 샘플 수 (예: 100000)
+- `build.split_workers`: split(train/val/test) 병렬 처리 수
+- `build.skip_existing_patch_pt`: 기존 chunk 있으면 이어쓰기/스킵
+
+실무 팁:
+- 너무 큰 `patch_chunk_rows`는 파일 I/O 단위가 커져 랜덤 접근이 느려질 수 있습니다.
+- 너무 작은 값은 파일 수가 과도하게 늘어 관리/오버헤드가 증가합니다.
 
 ## 입력/타깃 스펙
 
@@ -78,6 +182,15 @@ python main.py --config configs/train_ta.yaml --stage train
 - `loc`: `[lat, lon, gsd_m]` (현재 gsd 2000m)
 - `landcover_onehot`: 17차원
 - `y`: TA z-score 정규화 값
+
+```mermaid
+flowchart TB
+  S["Sample i"] --> X["x: [19,9,9]<br/>BT10 + RF6 + SZA1 + DEM1 + LSMASK1"]
+  S --> T["time7: [7]<br/>doy/hour/month sin-cos + sza_center"]
+  S --> L["loc: [3]<br/>lat, lon, gsd_m"]
+  S --> C["landcover_onehot: [17]"]
+  S --> Y["y: [1]<br/>normalized TA"]
+```
 
 정규화 통계:
 - `data/statistics/input_statistics_2022.json`
