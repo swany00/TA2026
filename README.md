@@ -3,7 +3,7 @@
 <div align="center">
 
 GK-2A 2D 패치 기반 TA 회귀 학습 파이프라인  
-**Clay pretrained encoder + supervised fine-tuning**
+**Clay 사전학습 인코더 기반 전이학습**
 
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.9-EE4C2C?logo=pytorch&logoColor=white)
@@ -15,20 +15,20 @@ GK-2A 2D 패치 기반 TA 회귀 학습 파이프라인
 
 ---
 
-## At A Glance
+## 한눈에 보기
 
-| Item | Current |
+| 항목 | 현재 상태 |
 | --- | --- |
-| Training mode | Clay encoder transfer fine-tuning |
-| Data format | `patch_pt` (`*_chunk_XXXXX.pt`) |
-| Input | `x(19,9,9) + time7 + loc + landcover_onehot` |
-| Target | TA z-score |
-| Checkpoints | `current.pt` (latest), `best.pt` (best val) |
-| Metrics | `loss(MSE), RMSE(norm), RMSE(K)` |
+| 학습 방식 | Clay encoder transfer fine-tuning |
+| 데이터 포맷 | `patch_pt` (`*_chunk_XXXXX.pt`) |
+| 입력 | `x(19,9,9) + time7 + loc + landcover_onehot` |
+| 타깃 | TA z-score |
+| 체크포인트 | `current.pt`(최신), `best.pt`(최저 val loss) |
+| 메트릭 | `loss(MSE), RMSE(norm), RMSE(K)` |
 
 ---
 
-## Pipeline
+## 파이프라인
 
 ```mermaid
 flowchart LR
@@ -40,7 +40,7 @@ flowchart LR
   F --> G[current.pt / best.pt]
 ```
 
-### Run
+### 실행 순서
 
 ```bash
 python main.py --config configs/data_2d.yaml --stage build_index
@@ -50,7 +50,7 @@ python main.py --config configs/train_ta.yaml --stage train
 
 ---
 
-## Patch Build Anatomy (`build_patches_pt`)
+## 패치 생성 상세 (`build_patches_pt`)
 
 ```mermaid
 flowchart TD
@@ -68,29 +68,29 @@ flowchart TD
   K --> L[end-of-split flush final chunk]
 ```
 
-### Input / Output
+### 입력/출력
 
-- Input index files:
+- 입력 인덱스:
   - `outputs/index/index_train.csv`
   - `outputs/index/index_val.csv`
   - `outputs/index/index_test.csv`
-- Output chunk files:
+- 출력 청크:
   - `outputs/patch_pt/train_chunk_00000.pt` ...
   - `outputs/patch_pt/val_chunk_00000.pt` ...
   - `outputs/patch_pt/test_chunk_00000.pt` ...
 
-### Chunk payload schema
+### PT 청크 내부 스키마
 
 - `x`: `(N, 19, 9, 9)` float32
-- `y`: `(N,)` float32 (normalized TA)
+- `y`: `(N,)` float32 (정규화된 TA)
 - `time7`: `(N, 7)` float32
 - `loc`: `(N, 3)` float32
 - `landcover_onehot`: `(N, 17)` float32
-- `meta`: length `N` list (`timestamp_utc`, `stn`, `pixel_x`, `pixel_y`)
+- `meta`: 길이 `N` list (`timestamp_utc`, `stn`, `pixel_x`, `pixel_y`)
 
 ---
 
-## Sample Tensor Design
+## 샘플 텐서 구조
 
 ```mermaid
 flowchart TB
@@ -101,42 +101,42 @@ flowchart TB
   S --> Y["y: [1]<br/>normalized TA"]
 ```
 
-Normalization stats:
+정규화 통계 파일:
 - `data/statistics/input_statistics_2022.json`
 - `data/statistics/statistics_2022.json`
 
 ---
 
-## Clay Transfer Settings
+## Clay 전이학습 설정
 
 `configs/train_ta.yaml`
 
 - `model.type: clay_transfer`
-- `model.clay_ckpt_path`: Clay checkpoint path
-- `model.bt_waves_um`, `model.rf_waves_um`: wavelength metadata
-- `model.freeze_encoder: true` (default)
+- `model.clay_ckpt_path`: Clay 체크포인트 경로
+- `model.bt_waves_um`, `model.rf_waves_um`: 파장 메타데이터
+- `model.freeze_encoder: true` (기본)
 
-Current training scope:
-- Implemented: supervised TA fine-tuning
-- Not implemented: MAE reconstruction, DINOv2 self-distillation
+현재 학습 범위:
+- 구현됨: supervised TA fine-tuning
+- 미구현: MAE reconstruction, DINOv2 self-distillation
 
 ---
 
-## Checkpoint Policy
+## 체크포인트 정책
 
-Saved in `outputs/checkpoints`:
+저장 위치: `outputs/checkpoints`
 
-- `current.pt`: latest epoch state
-- `best.pt`: best validation loss state
+- `current.pt`: 최신 epoch 상태
+- `best.pt`: 최저 validation loss 상태
 
-Both contain:
+포함 항목:
 - `model`, `optimizer`, `scheduler`, `epoch`, `best_val`
 
 ---
 
-## Logs & Metrics
+## 로그/메트릭
 
-Per-epoch log outputs:
+epoch 로그 출력:
 
 - `train_loss`, `val_loss` (MSE)
 - `train_rmse_norm`, `val_rmse_norm`
@@ -146,35 +146,20 @@ Per-epoch log outputs:
 
 ---
 
-## Practical Q&A (Current State)
+## 문서
 
-### Q1. Is this full Clay pretraining?
-No. This is Clay encoder transfer learning for TA regression.
-
-### Q2. Are time / lat-lon / gsd / wavelength actually used?
-Yes. All are wired into the current training path.
-
-### Q3. Why does tqdm show both loss and rmse?
-- `loss`: MSE
-- `rmse`: `sqrt(MSE)`
-
-### Q4. Why does training sometimes stall?
-Primary cause is large `patch_pt` I/O (`torch.load`) rather than model math.
-
-### Q5. Is MAE masking used now?
-No. Current loop is supervised TA fine-tuning only.
-
----
+- Q&A: `docs/FAQ.md`
+- 문서 구성 안내: `docs/README.md`
 
 ## Utilities
 
-Inspect a patch chunk quickly:
+패치 파일 빠른 확인:
 
 ```bash
 python src/data/check_patch_pt.py
 ```
 
-Inspect specific file/index:
+특정 파일/인덱스 확인:
 
 ```bash
 python src/data/check_patch_pt.py outputs/patch_pt/train_chunk_00010.pt --idx 10
