@@ -146,13 +146,11 @@ python src/data/check_patch_pt.py
 - GSD 인코딩: 구현됨
 - 채널 중심 파장 전달: 구현됨
 
-### Q3. loss와 rmse는 무엇이 다른가?
+### Q3. tqdm에 loss와 rmse는 어떻게 표시되는가?
 
 - `loss`: MSE
 - `rmse`: `sqrt(MSE)`
 - `rmse_K`: 정규화 해제 RMSE (`RMSE_norm * TA_std`)
-
-RMSE에는 mean을 더하지 않습니다.
 
 ### Q4. 체크포인트는 어떻게 저장되나?
 
@@ -197,15 +195,6 @@ RMSE에는 mean을 더하지 않습니다.
 체감상 `val` 직후 체크포인트 저장 I/O가 붙어서 느려 보일 수 있습니다.  
 순수 배치 수 기준으로는 보통 `val`이 더 작으면 더 빨라야 정상입니다.
 
-### Q10. check_patch_pt.py는 인자 없이 못 쓰나?
-
-지금은 인자 없이 실행 가능:
-
-```bash
-python src/data/check_patch_pt.py
-```
-
-자동으로 `outputs/patch_pt`에서 첫 chunk를 찾아 출력합니다.
 
 ## 기존 고민 Q&A (업데이트 답변)
 
