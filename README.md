@@ -30,6 +30,20 @@ GK-2A 2D 패치 기반 TA 회귀 학습 파이프라인
 
 ## 파이프라인
 
+### 정보흐름(개요)
+
+```mermaid
+flowchart LR
+  A["원천 데이터<br/>TA 라벨 + BT/RF/SZA + DEM/LSMASK/Landcover"] --> B["build_index"]
+  B --> C["index_train/val/test.csv"]
+  C --> D["build_patches_pt"]
+  D --> E["patch_pt chunks<br/>x, y, time7, loc, landcover_onehot, meta"]
+  E --> F["train (clay_transfer)"]
+  F --> G["current.pt / best.pt"]
+```
+
+### 실행흐름(상세)
+
 ```mermaid
 sequenceDiagram
     participant Raw as 원천 데이터
