@@ -1,0 +1,29 @@
+train:
+  patch_pt_root: step02_make_patches/outputs/patch_pt_alphaearth
+  checkpoint_dir: outputs/checkpoints_unfreeze
+  batch_size: 1024
+  num_workers: 0
+  prefetch_factor: 2
+  pin_memory: true
+  persistent_workers: true
+  cpu_threads: 16
+  file_cache_size: 8
+  epochs: 200
+  lr: 3.0e-5
+  weight_decay: 1.0e-5
+  device: cuda:3
+  seed: 42
+  val_random_samples: 356
+
+model:
+  clay_ckpt_path: /JBOD/Lab_data/suhwankim/jbnu_kma_ksh_ta/TA_2D_VER1/step03_train_clay/weights/clay-v1.5.ckpt
+  freeze_encoder: false
+  head_type: cross_attn
+  attn_heads: 8
+  bt_waves_um: [3.8, 6.3, 6.9, 7.3, 8.7, 9.6, 10.5, 11.2, 12.3, 13.3]
+  rf_waves_um: [0.47, 0.51, 0.64, 0.86, 1.37, 1.6]
+  hidden_dim: 256
+  dropout: 0.1
+
+data:
+  target_stats_path: data/statistics/statistics_2022.json

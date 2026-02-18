@@ -1,7 +1,0 @@
-flowchart LR
-  A[Raw data\nBT/Reflectance/SZA/DEM/LSMASK/Landcover\nTA labels] --> B[build_index]
-  B --> C[index_train.csv / index_val.csv / index_test.csv]
-  C --> D[build_patches_pt]
-  D --> E[outputs/patch_pt/*.pt chunks]
-  E --> F[train\nmodel=clay_transfer]
-  F --> G[current.pt / best.pt]

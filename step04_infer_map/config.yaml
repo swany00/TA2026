@@ -1,0 +1,24 @@
+model:
+  clay_ckpt_path: /JBOD/Lab_data/suhwankim/jbnu_kma_ksh_ta/TA_2D_VER1/src/data/weight/clay-v1.5.ckpt
+  freeze_encoder: false
+  bt_waves_um: [3.8, 6.3, 6.9, 7.3, 8.7, 9.6, 10.5, 11.2, 12.3, 13.3]
+  rf_waves_um: [0.47, 0.51, 0.64, 0.86, 1.37, 1.6]
+  hidden_dim: 256
+  dropout: 0.1
+
+stats:
+  input: data/statistics/input_statistics_2022.json
+  target: data/statistics/statistics_2022.json
+
+infer:
+  device: cuda:3
+  checkpoint: outputs/checkpoints_unfreeze/best.pt
+  bt: data/bt/202401/01/gk2a_ami_le1b_all_ch_ko020lc_202401010000_bt.npy
+  rf: data/reflectance/202401/01/gk2a_ami_le1b_all_ch_ko020lc_202401010000_reflectance.npy
+  sza: data/sub/sza_maps/202401/01/sza_map_202401010000.npy
+  dem_bin: data/sub/dem/world_SRTM_dem_ko020lc.bin
+  lsmask_bin: data/sub/lsmask/lsmask_ko020lc.bin
+  alpha: data/sub/alphaearth/KO_Embedding_2024_2km_on_KOgrid.nc
+  batch_size: 8192
+  out_dir: outputs/infer
+  name: 202401010000

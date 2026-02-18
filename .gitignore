@@ -1,71 +1,40 @@
-# 데이터 폴더 (용량이 큰 원본 데이터)
+# === 데이터 및 대용량 산출물 (GitHub 제외) ===
+/data
 data/
 outputs/
-experiments/
 
-# Python
+# Step별 산출물
+step01_make_index/outputs/
+step02_make_patches/outputs/
+step03_train_clay/weights/
+step04_infer_map/outputs/
+step05_eval_metrics/outputs/
+
+# === Python ===
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+*.egg
 *.egg-info/
 dist/
 build/
-*.egg
+eggs/
+.eggs/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# PyTorch 모델 및 체크포인트
-*.pt
-*.pth
-*.ckpt
-*.pkl
-
-# NumPy 배열 파일
-*.npy
-*.npz
-
-# 로그 파일
-*.log
-logs/
-
-# 환경 변수
-.env
-.venv
-env/
+# === 가상환경 / IDE ===
+.venv/
 venv/
-ENV/
-
-# IDE
-.vscode/
+env/
+.env
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
+
+# === 기타 ===
+.ipynb_checkpoints/
+*.log
 .DS_Store
-
-# 임시 파일
-*.tmp
-*.bak
-*.cache
-
-# 기타
-*.nc
-*.bin
-*.png
-*.jpg
-*.jpeg
-*.tif
-*.tiff
-
-# 하지만 README나 설정 파일의 예시 이미지는 제외하지 않음
-!README*.png
-!README*.jpg
-!configs/**/*.png
-!docs/**/*.png
-!docs/**/*.jpg
-!docs/**/*.mmd
-
+Thumbs.db

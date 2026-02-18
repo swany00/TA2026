@@ -1,0 +1,17 @@
+data:
+  ta_label_root: data/ta_k_label_npy
+  patch_size: 9
+  grid_h: 900
+  grid_w: 900
+  ta_k_min: 223.15
+
+split:
+  train_years: [2022]
+  val_years: [2023]
+  test_years: [2024]
+
+output:
+  root: step01_make_index/outputs
+
+runtime:
+  num_workers: 16
